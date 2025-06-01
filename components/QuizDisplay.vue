@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { io } from 'socket.io-client'
 
 const toast = useToast()
@@ -99,10 +99,34 @@ const quizzes = ref<Quiz[]>([])
 const selectedAnswers = ref<Record<string, string>>({})
 const renderedSolutions = ref(new Map<string, string>())
 
-// Utilisation de la variable d'environnement
 const config = useRuntimeConfig()
 const socket = io(config.public.socketUrl)
 
+const renderMarkdown = async (text: string) => {
+  if (process.client) {
+    const { marked } = await import('marked')
+    const DOMPurify = (await import('dompurify')).default
+    return DOMPurify.sanitize(marked(text))
+  }
+  return text
+}
+
+// Déplacer useFetch au niveau supérieur du composant
+const { data: initialData, pending, error } = useFetch<Quiz[]>(config.public.socketUrl + '/api/data')
+
+// Ajouter un watch pour déboguer le chargement des données
+watch(initialData, async (newData) => {
+  if (newData) {
+    quizzes.value = newData
+    // Traiter les solutions AI existantes
+    for (const quiz of newData) {
+      if (quiz.aiSolution) {
+        renderedSolutions.value.set(quiz._id, await renderMarkdown(quiz.aiSolution))
+      }
+    }
+  }
+  console.log('Données initiales mises à jour:', newData)
+}, { immediate: true })
 
 const parseOptions = (fieldset: string) => {
   return fieldset.split(' ').filter(option => option.startsWith('a.') || option.startsWith('b.') || option.startsWith('c.') || option.startsWith('d.'))
@@ -120,15 +144,6 @@ const copyQuiz = (quiz: Quiz) => {
   
   navigator.clipboard.writeText(quizText);
 };
-
-const renderMarkdown = async (text: string) => {
-  if (process.client) {
-    const { marked } = await import('marked')
-    const DOMPurify = (await import('dompurify')).default
-    return DOMPurify.sanitize(marked(text))
-  }
-  return text
-}
 
 onMounted(async () => {
   socket.on('newData', async (data: Quiz) => {
@@ -160,21 +175,6 @@ onMounted(async () => {
       toast.add({ severity: 'error', summary: 'Erreur AI', detail: 'Une erreur est survenue lors du traitement AI', life: 5000 });
     }
   })
-
-
-  // Récupération des données initiales
-  const { data: initialData, pending, error } = await useFetch<Quiz[]>(config.public.socketUrl + '/api/data')
-
-  // Mise à jour des quiz avec les données initiales
-  if (initialData.value) {
-    quizzes.value = initialData.value
-    // Traiter les solutions AI existantes
-    for (const quiz of initialData.value) {
-      if (quiz.aiSolution) {
-        renderedSolutions.value.set(quiz._id, await renderMarkdown(quiz.aiSolution))
-      }
-    }
-  }
 })
 
 onUnmounted(() => {
