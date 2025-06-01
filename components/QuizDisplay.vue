@@ -85,7 +85,7 @@ const config = useRuntimeConfig()
 const socket = io(config.public.socketUrl)
 
 // Récupération des données initiales
-const { data: initialData, pending, error } = await useFetch<Quiz[]>('http://localhost:3000/api/data')
+const { data: initialData, pending, error } = await useFetch<Quiz[]>(config.public.socketUrl + '/api/data')
 
 // Mise à jour des quiz avec les données initiales
 if (initialData.value) {
