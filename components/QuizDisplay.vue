@@ -34,6 +34,22 @@
                   </div>
                 </div>
               </div>
+              
+              <!-- AI Solution Section -->
+              <div v-if="quiz.aiSolution" class="mt-4 p-4 bg-green-50 rounded-lg">
+                <h3 class="text-lg font-semibold mb-2">Solution AI</h3>
+                <div class="prose prose-sm md:prose-base max-w-none">
+                  <ClientOnly>
+                    <div v-html="renderedSolutions.get(quiz._id) || ''"></div>
+                  </ClientOnly>
+                </div>
+              </div>
+              
+              <!-- AI Error Section -->
+              <div v-if="quiz.aiError" class="mt-4 p-4 bg-red-50 rounded-lg">
+                <h3 class="text-lg font-semibold mb-2 text-red-600">Erreur AI</h3>
+                <p>{{ quiz.aiError }}</p>
+              </div>
             </div>
           </div>
         </template>
@@ -57,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io } from 'socket.io-client'
 
 const toast = useToast()
@@ -75,22 +91,18 @@ interface Quiz {
     }
   }
   timestamp: string
+  aiSolution?: string
+  aiError?: string
 }
 
 const quizzes = ref<Quiz[]>([])
 const selectedAnswers = ref<Record<string, string>>({})
+const renderedSolutions = ref(new Map<string, string>())
 
 // Utilisation de la variable d'environnement
 const config = useRuntimeConfig()
 const socket = io(config.public.socketUrl)
 
-// Récupération des données initiales
-const { data: initialData, pending, error } = await useFetch<Quiz[]>(config.public.socketUrl + '/api/data')
-
-// Mise à jour des quiz avec les données initiales
-if (initialData.value) {
-  quizzes.value = initialData.value
-}
 
 const parseOptions = (fieldset: string) => {
   return fieldset.split(' ').filter(option => option.startsWith('a.') || option.startsWith('b.') || option.startsWith('c.') || option.startsWith('d.'))
@@ -109,13 +121,60 @@ const copyQuiz = (quiz: Quiz) => {
   navigator.clipboard.writeText(quizText);
 };
 
-onMounted(() => {
-  socket.on('newData', (data: Quiz) => {
+const renderMarkdown = async (text: string) => {
+  if (process.client) {
+    const { marked } = await import('marked')
+    const DOMPurify = (await import('dompurify')).default
+    return DOMPurify.sanitize(marked(text))
+  }
+  return text
+}
+
+onMounted(async () => {
+  socket.on('newData', async (data: Quiz) => {
     console.log('Nouvelles données reçues:', data)
     quizzes.value = [data, ...quizzes.value]
     
+    if (data.aiSolution) {
+      renderedSolutions.value.set(data._id, await renderMarkdown(data.aiSolution))
+    }
+    
     toast.add({ severity: 'success', summary: 'Nouveau quiz disponible', detail: 'Un nouveau quiz est disponible', life: 5000 });
   })
+
+  socket.on('aiSolution', async ({ id, aiSolution }) => {
+    console.log('Solution AI reçue:', id, aiSolution)
+    const quizIndex = quizzes.value.findIndex(q => q._id === id)
+    if (quizIndex !== -1) {
+      quizzes.value[quizIndex].aiSolution = aiSolution
+      renderedSolutions.value.set(id, await renderMarkdown(aiSolution))
+      toast.add({ severity: 'success', summary: 'Solution AI disponible', detail: 'La solution AI est maintenant disponible', life: 5000 });
+    }
+  })
+
+  socket.on('aiError', ({ id, error }) => {
+    console.log('Erreur AI reçue:', id, error)
+    const quizIndex = quizzes.value.findIndex(q => q._id === id)
+    if (quizIndex !== -1) {
+      quizzes.value[quizIndex].aiError = error
+      toast.add({ severity: 'error', summary: 'Erreur AI', detail: 'Une erreur est survenue lors du traitement AI', life: 5000 });
+    }
+  })
+
+
+  // Récupération des données initiales
+  const { data: initialData, pending, error } = await useFetch<Quiz[]>(config.public.socketUrl + '/api/data')
+
+  // Mise à jour des quiz avec les données initiales
+  if (initialData.value) {
+    quizzes.value = initialData.value
+    // Traiter les solutions AI existantes
+    for (const quiz of initialData.value) {
+      if (quiz.aiSolution) {
+        renderedSolutions.value.set(quiz._id, await renderMarkdown(quiz.aiSolution))
+      }
+    }
+  }
 })
 
 onUnmounted(() => {
