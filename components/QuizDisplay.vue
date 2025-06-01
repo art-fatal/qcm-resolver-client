@@ -17,18 +17,18 @@
           <div class="history-content">
             <div class="quiz-container">
               <div class="quiz-actions mb-4">
-                <Button class="copy-quiz" @click="copyQuiz(quiz)">
+                <Button class="copy-quiz text-sm md:text-base" @click="copyQuiz(quiz)">
                   📋 Copier le quiz
                 </Button>
               </div>
-              <div v-for="(question, qIndex) in quiz.content?.data?.generated" :key="qIndex" class="quiz-question mb-6">
-                <div class="question-text text-lg font-semibold mb-3">{{ question.qtext }}</div>
-                <div class="question-options space-y-2">
+              <div v-for="(question, qIndex) in quiz.content?.data?.generated" :key="qIndex" class="quiz-question mb-4 md:mb-6">
+                <div class="question-text text-base md:text-lg font-semibold mb-2 md:mb-3">{{ question.qtext }}</div>
+                <div class="question-options space-y-1 md:space-y-2">
                   <div 
                     v-for="(option, oIndex) in question.fieldset.split('\n')" 
                     :key="oIndex"
                     v-show="option.trim()"
-                    class="option p-3 bg-gray-50 rounded-lg"
+                    class="option p-2 md:p-3 bg-gray-50 rounded-lg text-sm md:text-base"
                   >
                     {{ option }}
                   </div>
@@ -40,7 +40,7 @@
 
         <template #footer>
           <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">
+            <span class="text-xs md:text-sm text-gray-500">
               {{ new Date(quiz.timestamp).toLocaleString('fr-FR', {
                 hour: '2-digit',
                 minute: '2-digit',
