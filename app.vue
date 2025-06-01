@@ -1,13 +1,21 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-1 md:p-4">
-    <div class="w-full lg:w-1/2 bg-white rounded-lg shadow-lg md:p-6 p-1">
-      <h1 class="text-lg md:text-2xl font-bold mb-4 md:mb-6">Quiz en temps réel</h1>
-      <QuizDisplay />
-    </div>
-    <Toast />
+  <div class="min-h-screen bg-gray-50 flex flex-col">
+    <NuxtPage />
+    
+    <!-- Navigation bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      <div class="max-w-screen-lg mx-auto flex justify-center space-x-4">
+        <NuxtLink to="/" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+          Quiz
+        </NuxtLink>
+        <NuxtLink to="/raw-content" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+          Contenu brut
+        </NuxtLink>
+      </div>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-// Le composant QuizDisplay sera automatiquement importé par Nuxt
+// Layout principal de l'application
 </script>
