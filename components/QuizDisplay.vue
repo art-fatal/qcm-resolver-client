@@ -1,18 +1,18 @@
 <template>
-  <div class="p-4">
-    <div v-if="pending" class="flex justify-center items-center p-8">
+  <div class="p-1 md:p-4">
+    <div v-if="pending" class="flex justify-center items-center p-1 md:p-8">
       <ProgressSpinner />
       <span class="ml-2">Chargement des quiz...</span>
     </div>
 
-    <div v-else-if="error" class="text-red-500 p-4">
+    <div v-else-if="error" class="text-red-500 p-1 md:p-4">
       <Message severity="error" :closable="false">
         Une erreur est survenue lors du chargement des quiz
       </Message>
     </div>
 
     <template v-else>
-      <Card v-for="quiz in quizzes" :key="quiz._id" class="mb-4">
+      <Card v-for="quiz in quizzes" :key="quiz._id" class="mb-4 !p-1 md:!p-4">
         <template #content>
           <div class="history-content">
             <div class="quiz-container">
@@ -145,5 +145,13 @@ onUnmounted(() => {
 .p-card-footer {
   padding: 1.5rem;
   border-top: 1px solid var(--surface-border);
+}
+
+.p-card-body {
+  padding: 0.5rem;
+}
+
+.p-card-content {
+  padding: 0.5rem;
 }
 </style> 
